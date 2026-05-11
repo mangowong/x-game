@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>X-Game - 沙发土豆的客厅冒险</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { overflow: hidden; background: #2a1f14; font-family: 'Segoe UI', sans-serif; }
+    canvas { display: block; }
+
+    /* UI 覆盖层 */
+    #ui-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      pointer-events: none; z-index: 10;
+    }
+
+    /* 状态栏 */
+    #stats {
+      position: absolute; top: 16px; left: 16px;
+      background: rgba(0,0,0,0.6); border-radius: 12px;
+      padding: 12px 16px; color: #fff; min-width: 220px;
+    }
+    #stats .stat-row { margin-bottom: 8px; }
+    #stats .stat-row:last-child { margin-bottom: 0; }
+    #stats .stat-label { font-size: 14px; margin-bottom: 2px; }
+    #stats .stat-bar {
+      width: 100%; height: 12px; background: rgba(255,255,255,0.15);
+      border-radius: 6px; overflow: hidden;
+    }
+    #stats .stat-bar-fill { height: 100%; border-radius: 6px; transition: width 0.3s; }
+    #weight-fill { background: #f59e0b; }
+    #happiness-fill { background: #ec4899; }
+    #desire-fill { background: #8b5cf6; }
+
+    /* 欲望警告闪烁 */
+    @keyframes desire-warning {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    #desire-row.warning .stat-bar {
+      box-shadow: 0 0 8px 2px rgba(239, 68, 68, 0.6);
+    }
+    #desire-row.warning .stat-label {
+      animation: desire-warning 0.8s ease-in-out infinite;
+      color: #ef4444;
+    }
+
+    /* 对话框 */
+    #dialog {
+      position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
+      background: rgba(0,0,0,0.75); color: #fff; padding: 12px 24px;
+      border-radius: 20px; font-size: 18px; text-align: center;
+      max-width: 80%; opacity: 0; transition: opacity 0.3s;
+      pointer-events: none;
+    }
+    #dialog.visible { opacity: 1; }
+
+    /* 健身进度条 */
+    #workout-progress {
+      position: absolute; bottom: 90px; left: 50%; transform: translateX(-50%);
+      background: rgba(0,0,0,0.7); border-radius: 12px;
+      padding: 8px 20px; color: #fff; text-align: center;
+      min-width: 200px; opacity: 0; transition: opacity 0.3s;
+      pointer-events: none;
+    }
+    #workout-progress.visible { opacity: 1; }
+    #workout-progress .workout-name { font-size: 14px; margin-bottom: 4px; }
+    #workout-progress .workout-bar {
+      width: 100%; height: 8px; background: rgba(255,255,255,0.2);
+      border-radius: 4px; overflow: hidden;
+    }
+    #workout-progress .workout-bar-fill {
+      height: 100%; background: #22c55e; border-radius: 4px; transition: width 0.1s;
+    }
+
+    /* 健身面板 */
+    #workout-panel {
+      position: absolute; top: 50%; right: 16px; transform: translateY(-50%);
+      background: rgba(0,0,0,0.75); border-radius: 12px;
+      padding: 12px 14px; color: #fff; font-size: 13px;
+      pointer-events: none; opacity: 0; transition: opacity 0.3s;
+      min-width: 180px;
+    }
+    #workout-panel.visible { opacity: 1; }
+    #workout-panel h3 {
+      font-size: 14px; margin-bottom: 8px; text-align: center;
+      border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 6px;
+    }
+    #workout-panel .workout-category {
+      font-size: 11px; color: #aaa; margin-top: 6px; margin-bottom: 2px;
+    }
+    #workout-panel .workout-item {
+      display: flex; justify-content: space-between; padding: 2px 0;
+    }
+    #workout-panel .workout-key {
+      background: rgba(255,255,255,0.15); border-radius: 3px;
+      padding: 0 5px; font-size: 11px; min-width: 20px; text-align: center;
+    }
+    #workout-panel .workout-effect {
+      font-size: 11px; color: #22c55e;
+    }
+    #workout-panel .workout-effect .happy { color: #ec4899; }
+
+    /* 欲望提示气泡 */
+    #desire-bubble {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -120px);
+      font-size: 28px; opacity: 0; transition: opacity 0.3s;
+      pointer-events: none;
+    }
+    #desire-bubble.visible { opacity: 1; }
+    #desire-bubble.suppressing { animation: none; }
+
+    /* 加载画面 */
+    #loading-screen {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: #2a1f14; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; z-index: 100;
+      color: #fff; font-size: 18px;
+    }
+    #loading-screen .spinner {
+      width: 40px; height: 40px; border: 4px solid rgba(255,255,255,0.2);
+      border-top-color: #f59e0b; border-radius: 50%;
+      animation: spin 0.8s linear infinite; margin-bottom: 16px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* 操作提示 */
+    #controls-hint {
+      position: absolute; bottom: 16px; left: 16px;
+      color: rgba(255,255,255,0.4); font-size: 12px;
+      pointer-events: none; line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+  <div id="loading-screen">
+    <div class="spinner"></div>
+    <div id="loading-text">初始化中...</div>
+  </div>
+  <div id="ui-overlay">
+    <div id="stats">
+      <div class="stat-row">
+        <div class="stat-label">体重: <span id="weight-value">50</span> kg</div>
+        <div class="stat-bar"><div id="weight-fill" class="stat-bar-fill" style="width:50%"></div></div>
+      </div>
+      <div class="stat-row">
+        <div class="stat-label">快乐: <span id="happiness-value">50 😊</span></div>
+        <div class="stat-bar"><div id="happiness-fill" class="stat-bar-fill" style="width:50%"></div></div>
+      </div>
+      <div class="stat-row" id="desire-row">
+        <div class="stat-label">食欲: <span id="desire-value">0</span></div>
+        <div class="stat-bar"><div id="desire-fill" class="stat-bar-fill" style="width:0%"></div></div>
+      </div>
+    </div>
+    <div id="workout-panel">
+      <h3>健身动作</h3>
+      <div id="workout-list"></div>
+    </div>
+    <div id="workout-progress">
+      <div class="workout-name" id="workout-progress-name"></div>
+      <div class="workout-bar"><div id="workout-progress-fill" class="workout-bar-fill" style="width:0%"></div></div>
+    </div>
+    <div id="dialog"></div>
+    <div id="desire-bubble">🍖</div>
+    <div id="controls-hint">
+      WASD 移动 | Space 压制食欲 | Tab 健身面板<br>
+      1-9, 0 健身动作 | ESC 取消
+    </div>
+  </div>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
