@@ -13,7 +13,7 @@ import * as THREE from 'three';
 import { clone as cloneSkeleton } from 'three/addons/utils/SkeletonUtils.js';
 import { physTo3D } from './utils.js';
 import { getAssetRaw } from './assets.js';
-import { setPlayerPosition, getPlayerPosition, stepPhysics } from './physics.js';
+import { setPlayerVelocity, setPlayerPosition, getPlayerPosition, stepPhysics } from './physics.js';
 
 const MOVE_SPEED = 4.0;
 
@@ -603,9 +603,8 @@ export function updatePlayer(delta, input, autoDir = null, autoSpeedRatio = null
 
   let targetX, targetZ;
   if (isMoving) {
-    const newX = currentPos.x + moveDx * speed * dt;
-    const newY = currentPos.y + moveDy * speed * dt;
-    setPlayerPosition(newX, newY);
+    // 用速度驱动移动，碰撞自动推离
+    setPlayerVelocity(moveDx * speed, moveDy * speed);
     stepPhysics(dt);
 
     const resolvedPos = getPlayerPosition();
@@ -615,8 +614,8 @@ export function updatePlayer(delta, input, autoDir = null, autoSpeedRatio = null
 
     if (!lastMoving) switchAction(walkAction);
   } else {
-    // 即使不移动也步进物理，确保碰撞持续有效
-    setPlayerPosition(currentPos.x, currentPos.y);
+    // 停止移动，高阻尼会让玩家迅速停下
+    setPlayerVelocity(0, 0);
     stepPhysics(dt);
 
     const resolvedPos = getPlayerPosition();

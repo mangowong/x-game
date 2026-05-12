@@ -1,7 +1,8 @@
 /**
  * physics.js - Rapier 2D 物理引擎封装
  * - 管理物理世界（零重力俯视角）
- * - 玩家 kinematic 刚体 + 家具 fixed 碰撞体
+ * - 玩家 dynamic 刚体（速度驱动移动，碰撞自动推离）
+ * - 家具/墙壁 fixed 碰撞体
  * - 每帧步进，自动碰撞推离
  */
 
@@ -19,13 +20,18 @@ export async function initPhysics() {
   // 零重力（俯视角2D游戏）
   world = new RAPIER.World({ x: 0.0, y: 0.0 });
 
-  // 玩家刚体：kinematicPositionBased（代码控制位置，Rapier 处理碰撞推离）
-  const playerBodyDesc = RAPIER.RigidBodyDesc.kinematicPositionBased()
-    .setTranslation(5.0, 5.0);
+  // 玩家刚体：dynamic（可以被碰撞体推回）
+  // 锁定旋转，高阻尼防止滑动
+  const playerBodyDesc = RAPIER.RigidBodyDesc.dynamic()
+    .setTranslation(5.0, 5.0)
+    .lockRotations()
+    .setLinearDamping(10.0);
   playerBody = world.createRigidBody(playerBodyDesc);
 
   // 玩家碰撞体：圆形
-  const playerColliderDesc = RAPIER.ColliderDesc.ball(0.35);
+  const playerColliderDesc = RAPIER.ColliderDesc.ball(0.35)
+    .setFriction(0.0)
+    .setRestitution(0.0);
   world.createCollider(playerColliderDesc, playerBody);
 
   // 边界墙
@@ -61,11 +67,21 @@ export function stepPhysics(delta) {
 }
 
 /**
- * 设置玩家目标位置（Rapier 会自动碰撞推离）
+ * 设置玩家移动速度（方向 * 速度）
+ * dynamic 刚体通过速度移动，碰撞自动推离
+ */
+export function setPlayerVelocity(vx, vy) {
+  if (!playerBody) return;
+  playerBody.setLinvel({ x: vx, y: vy }, true);
+}
+
+/**
+ * 直接设置玩家位置（用于初始化或重置）
  */
 export function setPlayerPosition(x, y) {
   if (!playerBody) return;
   playerBody.setTranslation({ x, y }, true);
+  playerBody.setLinvel({ x: 0, y: 0 }, true);
 }
 
 /**
