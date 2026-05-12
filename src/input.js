@@ -47,6 +47,8 @@ const WORKOUT_KEY_MAP = {
   'Digit8': 'yoga',
   'Digit9': 'pillowSquat',
   'Digit0': 'chaseCat',
+  'KeyQ': 'crouch',
+  'KeyE': 'grabItem',
 };
 
 /**

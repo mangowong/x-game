@@ -34,6 +34,8 @@ export const WORKOUTS = [
   { key: 'Digit8', action: 'yoga',        name: '瑜伽拉伸', duration: 3.5, weightDelta: -1,  happinessDelta: 5,  category: '器械' },
   { key: 'Digit9', action: 'pillowSquat', name: '举抱枕深蹲', duration: 2.5, weightDelta: -2, happinessDelta: 3,  category: '搞笑' },
   { key: 'Digit0', action: 'chaseCat',    name: '追猫跑',   duration: 3,   weightDelta: -4,  happinessDelta: 3,  category: '搞笑' },
+  { key: 'KeyQ',   action: 'crouch',      name: '蹲下',     duration: 0,   weightDelta: 0,   happinessDelta: 0,  category: '互动' },
+  { key: 'KeyE',   action: 'grabItem',    name: '拿东西',   duration: 1.5, weightDelta: 0,   happinessDelta: 2,  category: '互动' },
 ];
 
 // 当前健身状态
@@ -64,6 +66,11 @@ export function startWorkout(action) {
 export function updateWorkout(dt) {
   if (!activeWorkout) {
     return { active: false, progress: 0, workout: null, completed: false };
+  }
+
+  // duration=0 表示持续动作（如蹲下），不会自动完成
+  if (activeWorkout.duration === 0) {
+    return { active: true, progress: 0, workout: activeWorkout, completed: false };
   }
 
   workoutElapsed += dt;

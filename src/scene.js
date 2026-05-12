@@ -144,16 +144,14 @@ export function createScene() {
 
   // 踢脚线
   const baseboardMat = new THREE.MeshLambertMaterial({ color: 0xddd0c0 });
-  const bbBack = new THREE.Mesh(new THREE.BoxGeometry(18, 0.15, 0.05), baseboardMat);
-  bbBack.position.copy(backWall.position);
-  bbBack.position.y = 0.075;
-  bbBack.position.z -= 0.12;
+  const baseboardBackGeo = new THREE.BoxGeometry(18, 0.15, 0.05);
+  const bbBack = new THREE.Mesh(baseboardBackGeo, baseboardMat);
+  bbBack.position.set(backWall.position.x, 0.075, backWall.position.z - 0.12);
   scene.add(bbBack);
 
-  const bbLeft = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.15, 13), baseboardMat);
-  bbLeft.position.copy(leftWall.position);
-  bbLeft.position.y = 0.075;
-  bbLeft.position.x += 0.12;
+  const baseboardLeftGeo = new THREE.BoxGeometry(0.05, 0.15, 13);
+  const bbLeft = new THREE.Mesh(baseboardLeftGeo, baseboardMat);
+  bbLeft.position.set(leftWall.position.x + 0.12, 0.075, leftWall.position.z);
   scene.add(bbLeft);
 
   // =============================================

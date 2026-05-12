@@ -95,11 +95,11 @@ function applyJumpRope(dt) {
   // 整体上下跳动
   innerModel.position.y = Math.max(0, Math.sin(t * 2)) * 0.4;
 
-  // 手臂：保持绳子旋转姿态
-  setBoneRotAxis('LeftArm', new THREE.Vector3(0, 0, 1), -1.0);
-  setBoneRotAxis('RightArm', new THREE.Vector3(0, 0, 1), 1.0);
-  setBoneRotAxis('LeftForeArm', new THREE.Vector3(0, 0, 1), -0.5);
-  setBoneRotAxis('RightForeArm', new THREE.Vector3(0, 0, 1), 0.5);
+  // 手臂：向前微抬，前臂弯曲（摇绳姿态）
+  setBoneRotAxis('LeftArm', new THREE.Vector3(1, 0, 0), -0.8);
+  setBoneRotAxis('RightArm', new THREE.Vector3(1, 0, 0), -0.8);
+  setBoneRotAxis('LeftForeArm', new THREE.Vector3(1, 0, 0), -1.0);
+  setBoneRotAxis('RightForeArm', new THREE.Vector3(1, 0, 0), -1.0);
 
   // 腿：微弯跳跃
   const legBend = Math.max(0, -Math.sin(t * 2)) * 0.3;
@@ -362,6 +362,63 @@ function applyChaseCat(dt) {
   setBoneRotAxis('Spine', new THREE.Vector3(0, 0, 1), Math.sin(t * 0.7) * 0.1);
 }
 
+// 蹲下动画（静止蹲姿）
+function applyCrouch(dt) {
+  if (!innerModel) return;
+  // 腿弯曲
+  const legBend = 1.2;
+  setBoneRotAxis('LeftLeg', new THREE.Vector3(1, 0, 0), legBend);
+  setBoneRotAxis('RightLeg', new THREE.Vector3(1, 0, 0), legBend);
+  setBoneRotAxis('LeftFoot', new THREE.Vector3(1, 0, 0), -legBend * 0.3);
+  setBoneRotAxis('RightFoot', new THREE.Vector3(1, 0, 0), -legBend * 0.3);
+
+  // 身体前倾
+  setBoneRotAxis('Spine', new THREE.Vector3(1, 0, 0), 0.35);
+  setBoneRotAxis('Spine1', new THREE.Vector3(1, 0, 0), 0.2);
+
+  // 手臂向前微伸保持平衡
+  setBoneRotAxis('LeftArm', new THREE.Vector3(1, 0, 0), -0.5);
+  setBoneRotAxis('RightArm', new THREE.Vector3(1, 0, 0), -0.5);
+  setBoneRotAxis('LeftForeArm', new THREE.Vector3(1, 0, 0), -0.6);
+  setBoneRotAxis('RightForeArm', new THREE.Vector3(1, 0, 0), -0.6);
+
+  // 头微微前看
+  setBoneRotAxis('Head', new THREE.Vector3(1, 0, 0), 0.15);
+
+  // 整体下沉
+  innerModel.position.y = -0.4;
+}
+
+// 拿东西动画（弯腰伸手）
+function applyGrabItem(dt) {
+  if (!innerModel) return;
+  actionPhase += dt * 3;
+  const t = actionPhase;
+  // 弯腰进度
+  const bend = Math.min(1, t * 0.5);
+
+  // 整体前倾弯腰
+  setBoneRotAxis('Spine', new THREE.Vector3(1, 0, 0), bend * 0.8);
+  setBoneRotAxis('Spine1', new THREE.Vector3(1, 0, 0), bend * 0.5);
+  setBoneRotAxis('Spine2', new THREE.Vector3(1, 0, 0), bend * 0.3);
+
+  // 手臂向下伸
+  setBoneRotAxis('LeftArm', new THREE.Vector3(1, 0, 0), bend * 1.2);
+  setBoneRotAxis('RightArm', new THREE.Vector3(1, 0, 0), bend * 1.2);
+  setBoneRotAxis('LeftForeArm', new THREE.Vector3(1, 0, 0), -bend * 0.3);
+  setBoneRotAxis('RightForeArm', new THREE.Vector3(1, 0, 0), -bend * 0.3);
+
+  // 腿微弯保持平衡
+  setBoneRotAxis('LeftLeg', new THREE.Vector3(1, 0, 0), bend * 0.3);
+  setBoneRotAxis('RightLeg', new THREE.Vector3(1, 0, 0), bend * 0.3);
+
+  // 头低看
+  setBoneRotAxis('Head', new THREE.Vector3(1, 0, 0), bend * 0.3);
+
+  // 整体微下沉
+  innerModel.position.y = -bend * 0.15;
+}
+
 // 动作动画映射
 const ACTION_ANIMATIONS = {
   jumpRope: applyJumpRope,
@@ -374,6 +431,8 @@ const ACTION_ANIMATIONS = {
   yoga: applyYoga,
   pillowSquat: applyPillowSquat,
   chaseCat: applyChaseCat,
+  crouch: applyCrouch,
+  grabItem: applyGrabItem,
 };
 
 // 恢复所有骨骼到初始姿态

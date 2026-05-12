@@ -17,6 +17,8 @@ import { initInput, getInputDirection, getCameraState, consumeWorkoutAction, con
 import { updateDesire, getDesire, shouldAutoEat, satisfyDesireOnEat, getAutoEatDirection, getAutoMoveSpeedRatio, setAutoWalking, isAutoWalking } from './desire.js';
 import { startWorkout, updateWorkout, cancelWorkout, isWorkingOut, getWorkoutStatus, setDialogFn } from './workout.js';
 
+const MAX_CAM_PITCH = 1.5; // 靠墙时最大俯角
+
 // --- 启动 ---
 async function init() {
   // 1. 初始化 Rapier 物理
@@ -174,9 +176,24 @@ async function init() {
       const px = playerMesh.position.x;
       const pz = playerMesh.position.z;
 
-      const offsetX = Math.sin(cam.yaw) * Math.cos(cam.pitch) * cam.distance;
-      const offsetY = Math.sin(cam.pitch) * cam.distance;
-      const offsetZ = Math.cos(cam.yaw) * Math.cos(cam.pitch) * cam.distance;
+      // 角色靠近墙壁时自动抬高视角，避免被墙挡住
+      const wallMargin = 3.0;
+      const distBack = 12 - pz;   // 离后墙距离
+      const distLeft = px;         // 离左墙距离
+      const distFront = pz;        // 离前墙距离
+      const distRight = 12 - px;   // 离右墙距离
+      const minDist = Math.min(distBack, distLeft, distFront, distRight);
+
+      // 靠墙时 pitch 从用户值平滑抬到更高（更陡俯角）
+      let extraPitch = 0;
+      if (minDist < wallMargin) {
+        extraPitch = (1 - minDist / wallMargin) * 0.6; // 最多额外抬 0.6 弧度
+      }
+      const effectivePitch = Math.min(MAX_CAM_PITCH, cam.pitch + extraPitch);
+
+      const offsetX = Math.sin(cam.yaw) * Math.cos(effectivePitch) * cam.distance;
+      const offsetY = Math.sin(effectivePitch) * cam.distance;
+      const offsetZ = Math.cos(cam.yaw) * Math.cos(effectivePitch) * cam.distance;
 
       camera.position.set(px + offsetX, offsetY, pz + offsetZ);
       camera.lookAt(px, 1.2, pz);
